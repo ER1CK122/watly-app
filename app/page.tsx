@@ -1,102 +1,170 @@
-import Image from "next/image";
+/**
+ * Watly - Aplicativo de Controle de Hidratação
+ * © 2025 Erick Nunes
+ * Desenvolvido com Next.js e TypeScript
+ */
+"use client";
+
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const formatarQuantidade = (quantidade: number): string => {
+  if (quantidade >= 1000) {
+    const litros = quantidade / 1000;
+    return Number.isInteger(litros) 
+      ? `${litros} L`
+      : `${litros.toFixed(1)} L`;
+  }
+
+  return `${quantidade} mL`
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const botoesRapidos = [200, 300, 400, 500];
+  const [inputValue, setInputValue] = useState("");
+  const [tempoRestante, setTempoRestante] = useState("");
+  const [quantidadeIngerida, setQuantidadeIngerida] = useState(0);
+  const [ultimoDiaReset, setUltimoDiaReset] = useState(new Date().getDate());
+  const [unidadeMedidaSelecionada, setUnidadeMedidaSelecionada] = useState("mL");
+ 
+  const adicionarAgua = (quantidade: number, unidadeMedida: string = "mL") => {
+    if (quantidade <= 0 || isNaN(quantidade)) {
+      console.log("Quantidade não permitida");
+      return;
+    }
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    let quantidadeEmMl = quantidade;
+    if (unidadeMedida === "L") {
+      quantidadeEmMl = quantidade * 1000;
+    }
+    
+    setQuantidadeIngerida(prev => prev + quantidadeEmMl);
+    setInputValue("");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value;    
+    setInputValue(valor);
+  };
+
+  useEffect(() => {
+    const dadosSalvos = localStorage.getItem('watly-data');
+    if (dadosSalvos) {
+      const dados = JSON.parse(dadosSalvos);
+      setQuantidadeIngerida(dados.quantidadeIngerida || 0);
+      setUltimoDiaReset(dados.ultimoDiaReset || new Date().getDate());
+    }
+  }, []);
+
+  useEffect(() => {
+    const dados = {
+      quantidadeIngerida: quantidadeIngerida,
+      ultimoDiaReset: ultimoDiaReset,
+    }
+    localStorage.setItem('watly-data', JSON.stringify(dados));
+  }, [quantidadeIngerida, ultimoDiaReset]);
+
+  useEffect(() => {
+    const verificarReset = () => {
+      const hoje = new Date().getDate();
+      if (hoje !== ultimoDiaReset) {
+        setQuantidadeIngerida(0);
+        setUltimoDiaReset(hoje);
+        console.log("Resetando quantidade ingerida");
+      }
+    }
+
+    verificarReset();
+    const intervalo = setInterval(verificarReset, 60000);
+    return () => clearInterval(intervalo);
+  }, [ultimoDiaReset]);
+
+  useEffect(() => {
+    const atualizarTempo = () => {
+      const agora = new Date();
+      const fimdoDia = new Date();
+      fimdoDia.setHours(23, 59, 59, 999);
+
+      const diferenca = fimdoDia.getTime() - agora.getTime();
+      if (diferenca > 0) {
+        const horas = Math.floor(diferenca / (1000 * 60 * 60));
+        const minutos = Math.floor((diferenca % (1000 * 60 * 60)) / (1000 * 60));
+        const segundos = Math.floor((diferenca % (1000 * 60)) / 1000);
+        
+        const horasFormatadas = horas.toString().padStart(2, "0");
+        const minutosFormatados = minutos.toString().padStart(2, "0");
+        const segundosFormatados = segundos.toString().padStart(2, "0");
+
+        setTempoRestante(`${horasFormatadas}:${minutosFormatados}:${segundosFormatados}`);
+      } else {
+        setTempoRestante("00:00:00");
+      }
+    };
+
+    atualizarTempo();
+    const intervalo = setInterval(atualizarTempo, 1000);
+    return () => clearInterval(intervalo);
+  }, []);
+
+  const textoQuantidade = formatarQuantidade(quantidadeIngerida);
+
+  return (
+    <div className="h-screen flex flex-col">
+      <h1 className="md:text-4xl text-3xl font-bold text-center mt-10">Watly</h1>
+      <div className="flex md:flex-row flex-col justify-center items-center mt-20 gap-2 md:text-2xl text-xl font-bold">
+        <p>Quantidade de água ingerida:</p>
+        <p>{textoQuantidade}</p>
+      </div>
+      <div className="fixed inset-0 flex flex-col justify-center items-center z-10">
+        <p className="md:text-2xl text-xl font-bold text-center">Adicionar quantidade ingerida:</p>
+        <div className="flex justify-center items-center mt-4 gap-2 w-100 mx-auto">
+          <Input 
+            type="number" 
+            placeholder="100" 
+            className="w-84"
+            value={inputValue} 
+            onChange={handleInputChange}
+            aria-label="Quantidade de água"
+            min="0"
+            step="1"
+          />
+          <Select value={unidadeMedidaSelecionada} onValueChange={(value) => setUnidadeMedidaSelecionada(value)}>
+            <SelectTrigger className="w-84">
+              <SelectValue placeholder="Unidade de medida" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mL">mL</SelectItem>
+              <SelectItem value="L">L</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => adicionarAgua(Number(inputValue), unidadeMedidaSelecionada)}>
+            <Plus />
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        <div className="flex justify-center items-center mt-2 gap-2 w-1/3 mx-auto">
+          {botoesRapidos.map(quantidade => (
+            <Button 
+              key={quantidade} 
+              onClick={() => adicionarAgua(quantidade)}
+            >
+              {quantidade} mL
+            </Button>
+          ))}
+        </div>
+      </div>
+      <footer className="flex md:flex-row flex-col justify-center gap-2 md:text-2xl text-xl font-bold fixed bottom-0 md:left-0 text-center w-full py-4">
+      <div className="flex flex-col md:flex-row justify-center gap-2 w-full">
+          <div className="flex md:flex-row flex-col justify-center gap-2">
+            <p>Quantidade de horas para o fim do dia:</p>
+            <p>{tempoRestante}</p>
+          </div>
+          <p className="text-xs opacity-70 md:text-sm  md:absolute md:right-4 md:bottom-2">
+            © 2025 Erick Nunes
+          </p>
+        </div>
       </footer>
     </div>
   );
