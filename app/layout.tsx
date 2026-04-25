@@ -10,7 +10,8 @@ const interSans = Inter({
 export const metadata: Metadata = {
   authors: [{ name: "Erick Nunes", url: "https://github.com/ER1CK122" }],
   title: "Watly-app",
-  description: "App para monitorar e incentivar o consumo diário de água, com metas personalizadas e gamificação. 💧🚰",
+  description:
+    "App para monitorar e incentivar o consumo diário de água, com metas personalizadas e gamificação. 💧🚰",
 };
 
 export default function RootLayout({
@@ -23,9 +24,7 @@ export default function RootLayout({
       <head>
         <meta name="copyright" content="© 2025 Erick Nunes" />
       </head>
-      <body
-        className={`${interSans.variable} antialiased dark`}
-      >
+      <body className={`${interSans.variable} antialiased dark`}>
         {children}
       </body>
     </html>
